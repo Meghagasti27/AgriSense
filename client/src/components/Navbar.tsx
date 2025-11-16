@@ -12,7 +12,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-reac
 
 export default function Navbar() {
   return (
-    <nav className="w-full flex items-center justify-between p-4 bg-white shadow-xl shadow-green-300 rounded-b-4xl">
+    <nav className="w-full flex items-center justify-between p-4 bg-white shadow-xl shadow-green-200 rounded-b-4xl">
 
       <Link to="/" className="text-2xl font-bold flex items-center gap-2">
         <img alt="Logo" src="/logo.svg" width={40} height={40} />
