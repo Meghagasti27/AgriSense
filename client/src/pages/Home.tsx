@@ -1,3 +1,14 @@
+import HeroSection from "@/components/HeroSection"
+import Slides from "@/components/Slides"
+import Footer from "@/components/Footer"
+
 export default function Home() {
-  return <h1 className="flex justify-center">Home Page</h1>;
+  return (
+    <div>
+      <HeroSection />
+      <Slides />
+      <Footer/>
+    </div>
+    
+  )
 }
