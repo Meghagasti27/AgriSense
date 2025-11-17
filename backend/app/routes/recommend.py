@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.models import CropInput, RecommendResponse, CropRecommendation
-from app.ml.crop_predictor import predict_yield   # use actual model
+from app.ml.crop_predictor import predict_yield   # use actual model, get_predictor
 from app.auth import verify_clerk_token
 
 router = APIRouter()
@@ -68,3 +68,18 @@ def recommend(input: CropInput, session=Depends(verify_clerk_token)):
         )
 
     return RecommendResponse(recommendations=results)
+
+
+    @router.get("/model-info")
+def get_model_info():
+    """
+    Get ML model information including metrics and feature importance
+    """
+    try:
+        predictor = get_predictor()
+        return predictor.get_model_info()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get model info: {str(e)}"
+        )
