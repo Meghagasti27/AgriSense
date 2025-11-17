@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
 class CropInput(BaseModel):
     soil_type: str
     pH: float
@@ -8,6 +9,7 @@ class CropInput(BaseModel):
     avg_temp_30: float
     lat: float
     irrigation: bool = False
+
 
 class CropRecommendation(BaseModel):
     crop: str
@@ -17,6 +19,7 @@ class CropRecommendation(BaseModel):
     confidence: Optional[float] = None
     min_yield: Optional[float] = None
     max_yield: Optional[float] = None
+
 
 class RecommendResponse(BaseModel):
     recommendations: List[CropRecommendation]

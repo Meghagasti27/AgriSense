@@ -1,24 +1,23 @@
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Body
 from app.models import CropInput, RecommendResponse, CropRecommendation
-from app.ml.crop_predictor import predict_yield   # use actual model, get_predictor
-from app.auth import verify_clerk_token
+from app.ml.crop_predictor import get_predictor
+from app.services.weather import get_weather_by_coords
 
 router = APIRouter()
 
-@router.post("/recommend", response_model=RecommendResponse)
-async def recommend(input = Body(...), session = Depends(verify_clerk_token)):
-    """
-    - Validates inputs
-    - Verifies Clerk token first
-    - Returns crop recommendations
-    """
 
+@router.post("/recommend", response_model=RecommendResponse)
+async def recommend(input: CropInput = Body(...)):
+    """
+    Main recommendation endpoint.
+    - Validates inputs
+    - (Optionally) enriches temperature using OpenWeather
+    - Uses ML model with confidence + ranges
+    - Returns ranked crop recommendations
+    """
     print(f"Received input: {input}")
 
-    # extract userId if needed
-    user_id = session.get("userId")
-    print(f"User ID from session: {user_id}")
-    # 1 Basic validations
+    # 1) Basic validations
     if not input.soil_type:
         raise HTTPException(status_code=400, detail="Soil type is required")
 
@@ -28,45 +27,61 @@ async def recommend(input = Body(...), session = Depends(verify_clerk_token)):
     if input.rainfall_30 < 0:
         raise HTTPException(status_code=400, detail="Rainfall cannot be negative")
 
-    # 2 Crop mapping logic
+    # 2) Crop mapping logic
     crop_map = {
         "Loamy": ["Maize", "Soybean", "Potato"],
         "Alluvial": ["Rice", "Wheat", "Sugarcane"],
         "Sandy": ["Millet", "Groundnut", "Sesame"],
-        "Clayey": ["Rice", "Cotton", "Mustard"]
+        "Clayey": ["Rice", "Cotton", "Mustard"],
     }
 
     candidates = crop_map.get(input.soil_type, ["Maize", "Wheat", "Rice"])
     results = []
 
-    # 3 Prediction with error safety
+    # 3) Optional weather enrichment (lat used for both lat/lon placeholder)
+    weather = get_weather_by_coords(input.lat, input.lat)
+    if weather:
+        main = weather.get("main", {})
+        temp = main.get("temp")
+        if temp is not None:
+            print(f"Overriding avg_temp_30 with OpenWeather temp: {temp}")
+            input.avg_temp_30 = float(temp)
+
+    predictor = get_predictor()
+
+    # 4) Prediction loop with confidence & ranges
     try:
         for crop in candidates:
-            # FIX: send full feature set that model needs
-            features = {
-                "soil_type": input.soil_type,
-                "pH": input.pH,
-                "rainfall": input.rainfall_30,
-                "avg_temp": input.avg_temp_30,
-                "crop": crop
-            }
+            metrics = predictor.predict_with_confidence(
+                soil_type=input.soil_type,
+                ph=input.pH,
+                rainfall_30=input.rainfall_30,
+                avg_temp_30=input.avg_temp_30,
+                lat=input.lat,
+                irrigation=input.irrigation,
+            )
 
-            est_yield = predict_yield(features)
-            est_profit = est_yield * 10  # placeholder
+            est_yield = metrics["prediction"]
+            est_profit = est_yield * 10  # placeholder INR/acre
+            confidence = metrics["confidence"]
+            min_yield = metrics["min_yield"]
+            max_yield = metrics["max_yield"]
 
             results.append(
                 CropRecommendation(
                     crop=crop,
                     estimated_yield_kg_per_acre=est_yield,
                     estimated_profit_inr_per_acre=est_profit,
-                    risk="low"
+                    risk="low",  # you can later derive this from confidence / range
+                    confidence=confidence,
+                    min_yield=min_yield,
+                    max_yield=max_yield,
                 )
             )
-
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Prediction failed: {str(e)}"
+            detail=f"Prediction failed: {str(e)}",
         )
 
     return RecommendResponse(recommendations=results)
@@ -83,5 +98,5 @@ def get_model_info():
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get model info: {str(e)}"
+            detail=f"Failed to get model info: {str(e)}",
         )
