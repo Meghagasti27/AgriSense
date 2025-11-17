@@ -14,7 +14,7 @@ class CropYieldPredictor:
         self.model = None
         self.soil_encoder = LabelEncoder()
         self.model_path = Path(__file__).parent / 'models'
-                self.model_metrics = {}
+            self.model_metrics = {}
         self.feature_importance = {}
         
         self.model_path.mkdir(exist_ok=True)
