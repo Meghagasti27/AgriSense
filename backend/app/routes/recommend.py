@@ -70,7 +70,7 @@ def recommend(input: CropInput, session=Depends(verify_clerk_token)):
     return RecommendResponse(recommendations=results)
 
 
-    @router.get("/model-info")
+@router.get("/model-info")
 def get_model_info():
     """
     Get ML model information including metrics and feature importance
