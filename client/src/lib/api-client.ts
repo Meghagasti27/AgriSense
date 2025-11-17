@@ -22,14 +22,17 @@ export class ApiClientError extends Error {
  */
 async function apiRequest<T>(
   endpoint: string,
+  token: string | null,
   options?: RequestInit
 ): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options?.headers,
       },
+      credentials: 'include',
       ...options,
     });
 
@@ -53,9 +56,11 @@ async function apiRequest<T>(
  * Get crop recommendations based on soil and weather data
  */
 export async function getCropRecommendations(
-  input: CropInput
+  input: CropInput,
+  token: string | null
 ): Promise<RecommendResponse> {
-  return apiRequest<RecommendResponse>('/api/recommend', {
+  console.log("Token in API Client:", input);
+  return apiRequest<RecommendResponse>('/api/recommend', token, {
     method: 'POST',
     body: JSON.stringify(input),
   });
@@ -64,8 +69,8 @@ export async function getCropRecommendations(
 /**
  * Get ML model information and metrics
  */
-export async function getModelInfo(): Promise<ModelInfo> {
-  return apiRequest<ModelInfo>('/api/model-info');
+export async function getModelInfo(token: string | null): Promise<ModelInfo> {
+  return apiRequest<ModelInfo>('/api/model-info', token);
 }
 
 /**

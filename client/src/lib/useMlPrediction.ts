@@ -4,7 +4,7 @@ import { getCropRecommendations, ApiClientError } from './api-client';
 import type { CropInput, RecommendResponse } from './api-types';
 
 interface UseMlPredictionReturn {
-  predict: (input: CropInput) => Promise<void>;
+  predict: (input: CropInput, token: string) => Promise<void>;
   data: RecommendResponse | null;
   loading: boolean;
   error: string | null;
@@ -28,12 +28,12 @@ export function useMlPrediction(): UseMlPredictionReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const predict = async (input: CropInput) => {
+  const predict = async (input: CropInput, token:string) => {
     setLoading(true);
     setError(null);
     
     try {
-      const result = await getCropRecommendations(input);
+      const result = await getCropRecommendations(input,token);
       setData(result);
     } catch (err) {
       if (err instanceof ApiClientError) {

@@ -14,7 +14,7 @@ class CropRecommendation(BaseModel):
     estimated_yield_kg_per_acre: float
     estimated_profit_inr_per_acre: float
     risk: str
-        confidence: Optional[float] = None
+    confidence: Optional[float] = None
     min_yield: Optional[float] = None
     max_yield: Optional[float] = None
 

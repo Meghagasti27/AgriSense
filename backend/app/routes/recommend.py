@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from app.models import CropInput, RecommendResponse, CropRecommendation
 from app.ml.crop_predictor import predict_yield   # use actual model, get_predictor
 from app.auth import verify_clerk_token
@@ -6,16 +6,18 @@ from app.auth import verify_clerk_token
 router = APIRouter()
 
 @router.post("/recommend", response_model=RecommendResponse)
-def recommend(input: CropInput, session=Depends(verify_clerk_token)):
+async def recommend(input = Body(...), session = Depends(verify_clerk_token)):
     """
     - Validates inputs
     - Verifies Clerk token first
     - Returns crop recommendations
     """
 
-    # extract userId if needed
-    user_id = session.get("user_id")
+    print(f"Received input: {input}")
 
+    # extract userId if needed
+    user_id = session.get("userId")
+    print(f"User ID from session: {user_id}")
     # 1 Basic validations
     if not input.soil_type:
         raise HTTPException(status_code=400, detail="Soil type is required")
@@ -70,7 +72,7 @@ def recommend(input: CropInput, session=Depends(verify_clerk_token)):
     return RecommendResponse(recommendations=results)
 
 
-    @router.get("/model-info")
+@router.get("/model-info")
 def get_model_info():
     """
     Get ML model information including metrics and feature importance
