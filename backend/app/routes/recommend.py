@@ -39,7 +39,7 @@ async def recommend(input: CropInput = Body(...)):
     results = []
 
     # 3) Optional weather enrichment (lat used for both lat/lon placeholder)
-    weather = get_weather_by_coords(input.lat, input.lat)
+    weather = get_weather_by_coords(input.lat, input.lon)
     if weather:
         main = weather.get("main", {})
         temp = main.get("temp")
