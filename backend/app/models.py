@@ -8,6 +8,7 @@ class CropInput(BaseModel):
     rainfall_30: float
     avg_temp_30: float
     lat: float
+        lon: float
     irrigation: bool = False
 
 
