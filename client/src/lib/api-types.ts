@@ -2,10 +2,11 @@
 
 export interface CropInput {
   soil_type: 'Loamy' | 'Sandy' | 'Clayey' | 'Alluvial';
-  ph: number;
+  pH: number;
   rainfall_30: number;
   avg_temp_30: number;
   lat: number;
+  lon: number;
   irrigation: boolean;
 }
 
