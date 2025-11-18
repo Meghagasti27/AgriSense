@@ -7,7 +7,7 @@ function Dashboard() {
 
     const callApi = async () => {
         const token = await getToken();
-        const res = await fetch("http://localhost:8000/protected", {
+        const res = await fetch("http://localhost:8000/api/model-info", {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
