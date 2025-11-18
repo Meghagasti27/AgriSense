@@ -1,5 +1,6 @@
 import os
 from fastapi import Request, HTTPException
+from fastapi import status
 from clerk_backend_api import Clerk
 from clerk_backend_api.security import authenticate_request
 from clerk_backend_api.security.types import AuthenticateRequestOptions
