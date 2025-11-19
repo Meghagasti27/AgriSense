@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from 'react';
-
+import CropRecommendations from './CropRecommendations';
 function Dashboard() {
     const { getToken } = useAuth();
 
@@ -254,7 +254,7 @@ function Dashboard() {
                                 </CardHeader>
                                 <CardContent>
                                     <pre className="text-sm overflow-auto">
-                                        {JSON.stringify(result, null, 2)}
+                                        <CropRecommendations data={result}/>
                                     </pre>
                                 </CardContent>
                             </Card>
