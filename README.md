@@ -4,7 +4,7 @@ This repository contains the **client-side application**, built with **React + V
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 - React 18  
 - Vite  
 - TypeScript  
@@ -15,7 +15,7 @@ This repository contains the **client-side application**, built with **React + V
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 ```bash
