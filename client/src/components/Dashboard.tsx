@@ -1,270 +1,330 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useState, type ChangeEvent } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@clerk/clerk-react";
-import { useEffect, useState } from 'react';
-import CropRecommendations from './CropRecommendations';
+import type { RecommendResponse } from "@/lib/api-types";
+import CropRecommendations from "./CropRecommendations";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  "http://localhost:8000";
+
+// const initialForm = {
+//   avg_temp_30: "",
+//   soil_type: "",
+//   pH: "",
+//   rainfall_30: "",
+//   lat: "",
+//   lon: "",
+//   irrigation: false,
+// };
+
+const initialForm = {
+  crop_year: "2020",
+  season: "",
+  state: "",
+  area: "",
+  annual_rainfall: "",
+  fertilizer: "",
+  pesticide: "",
+};
+
 function Dashboard() {
-    const { getToken } = useAuth();
+  const { getToken } = useAuth();
 
-    useEffect(() => {
-        const callApi = async () => {
-            const token = await getToken();
-            const res = await fetch("http://localhost:8000/api/model-info", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                credentials: "include",
-            });
-            console.log(await res.json());
-        };
-        callApi();
-    }, []);
+  const [formData, setFormData] = useState(initialForm);
+  const [result, setResult] = useState<RecommendResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const fetchCurrentLocation = () => {
-        if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser');
-            return;
-        }
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setFormData(prev => ({
-                    ...prev,
-                    lat: position.coords.latitude.toFixed(4),
-                    lon: position.coords.longitude.toFixed(4)
-                }));
-            },
-            (error) => {
-                console.error('Error getting location:', error);
-                alert('Unable to retrieve your location. Please enter manually.');
-            }
-        );
-    };
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
 
-    const [formData, setFormData] = useState({
-        avg_temp_30: '',
-        soil_type: '',
-        pH: '',
-        rainfall_30: '',
-        lat: '',
-        lon: '',
-        irrigation: false
-    });
+  const validateForm = () => {
+    const required = [
+      formData.crop_year,
+      formData.season,
+      formData.state,
+      formData.area,
+      formData.annual_rainfall,
+      formData.fertilizer,
+      formData.pesticide,
+    ];
 
-    const [result, setResult] = useState(null);
-    const [loading, setLoading] = useState(false);
+    if (required.some((value) => value === "")) {
+      return "Please complete all fields.";
+    }
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-        console.log(formData);
-    };
+    return null;
+  };
 
-    const handleSoilTypeChange = (value:any) => {
-        setFormData(prev => ({ ...prev, soil_type: value }));
-        console.log(formData);
-    };
+  const predict = async () => {
+    const validationError = validateForm();
 
-    const pred = async () => {
-        setLoading(true);
-        setResult(null);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
-        try {
-            const token = await getToken();
-            const res = await fetch("http://localhost:8000/api/recommend", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    avg_temp_30: parseFloat(formData.avg_temp_30),
-                    soil_type: formData.soil_type,
-                    pH: parseFloat(formData.pH),
-                    rainfall_30: parseFloat(formData.rainfall_30),
-                    lat: parseFloat(formData.lat),
-                    lon: parseFloat(formData.lon),
-                    irrigation: formData.irrigation
-                }),
-                credentials: "include",
-            });
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
-            const data = await res.json();
-            setResult(data);
-            console.log("Recommendation result:", data);
-            setResult(data);
-        } catch (error) {
-            console.error("Error getting recommendation:", error);
-            setResult({ error: "Failed to get recommendation" });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex gap-4 mt-10 h-[80vh]">
-            <Card className='hidden md:flex flex-col w-[30vh] rounded-r-3xl rounded-l-none'>
-                <CardHeader>
-                    <CardTitle>History</CardTitle>
-                </CardHeader>
-            </Card>
-            <div className="w-full rounded-3xl font-bold p-3">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-2xl">Crop Recommendation System</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Average Temperature */}
-                            <div className="space-y-2">
-                                <Label htmlFor="avg_temp_30">Average Temperature (°C)</Label>
-                                <Input
-                                    id="avg_temp_30"
-                                    name="avg_temp_30"
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="e.g., 30"
-                                    value={formData.avg_temp_30}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            {/* Rainfall */}
-                            <div className="space-y-2">
-                                <Label htmlFor="rainfall_30">Rainfall (mm)</Label>
-                                <Input
-                                    id="rainfall_30"
-                                    name="rainfall_30"
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="e.g., 200"
-                                    value={formData.rainfall_30}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            {/* pH Level */}
-                            <div className="space-y-2">
-                                <Label htmlFor="pH">pH Level</Label>
-                                <Input
-                                    id="pH"
-                                    name="pH"
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    max="14"
-                                    placeholder="e.g., 6.5"
-                                    value={formData.pH}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            {/* Soil Type */}
-                            <div className="space-y-2">
-                                <Label htmlFor="soil_type">Soil Type</Label>
-                                <Select value={formData.soil_type} onValueChange={handleSoilTypeChange}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select soil type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Sandy">Sandy</SelectItem>
-                                        <SelectItem value="Loamy">Loamy</SelectItem>
-                                        <SelectItem value="Clay">Clayey</SelectItem>
-                                        <SelectItem value="Alluvial">Alluvial</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Latitude */}
-                            <div className="space-y-2">
-                                <Label htmlFor="lat">Latitude</Label>
-                                <Input
-                                    id="lat"
-                                    name="lat"
-                                    type="number"
-                                    step="0.0001"
-                                    placeholder="e.g., 15.5"
-                                    value={formData.lat}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            {/* Longitude */}
-                            <div className="space-y-2">
-                                <Label htmlFor="lon">Longitude</Label>
-                                <Input
-                                    id="lon"
-                                    name="lon"
-                                    type="number"
-                                    step="0.0001"
-                                    placeholder="e.g., 75.5"
-                                    value={formData.lon}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            {/* Use My Location Button */}
-                            <Button
-                                type="button"
-                                onClick={fetchCurrentLocation}
-                                variant="outline"
-                                className="whitespace-nowrap md:col-span-2"
-                            >
-                                📍 Use My Location
-                            </Button>
-
-                            {/* Irrigation */}
-                            <div className="flex items-center space-x-3 md:col-span-2">
-                                <Label htmlFor="irrigation">Irrigation</Label>
-                                <button
-                                    type="button"
-                                    onClick={() => handleInputChange({
-                                        target: {
-                                            name: 'irrigation',
-                                            type: 'checkbox',
-                                            checked: !formData.irrigation
-                                        }
-                                    })}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.irrigation ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.irrigation ? 'translate-x-6' : 'translate-x-1'}`} />
-                                </button>
-                                <Label htmlFor="irrigation" className="cursor-pointer">
-                                    {formData.irrigation ? 'Has' : 'No'} Irrigation
-                                </Label>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4 mt-6">
-                            <Button onClick={pred} disabled={loading} className="flex-1 mx-auto max-w-[60vw]">
-                                {loading ? "Getting Recommendation..." : "Get Prediction"}
-                            </Button>
-                        </div>
-
-                        {/* Results Display */}
-                        {result && (
-                            <Card className="mt-6 bg-blue-50">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">Recommendation Result</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <pre className="text-sm overflow-auto">
-                                        <CropRecommendations data={result}/>
-                                    </pre>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      15000
     );
+
+    try {
+      const token = await getToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/recommend`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token
+              ? { Authorization: `Bearer ${token}` }
+              : {}),
+          },
+          body: JSON.stringify({
+            crop_year: Number(formData.crop_year),
+            season: formData.season,
+            state: formData.state,
+            area: Number(formData.area),
+            annual_rainfall: Number(
+              formData.annual_rainfall
+            ),
+            fertilizer: Number(
+              formData.fertilizer
+            ),
+            pesticide: Number(
+              formData.pesticide
+            ),
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+            "The prediction service returned an error."
+        );
+      }
+
+      setResult(data as RecommendResponse);
+    } catch (requestError) {
+      setError(
+        requestError instanceof DOMException &&
+          requestError.name === "AbortError"
+          ? "Prediction timed out. Please try again."
+          : requestError instanceof Error
+          ? requestError.message
+          : "Failed to get a recommendation."
+      );
+    } finally {
+      window.clearTimeout(timeout);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex gap-4 mt-10 pb-10">
+      <Card className="hidden md:flex flex-col w-[30vh] rounded-r-3xl rounded-l-none">
+        <CardHeader>
+          <CardTitle>History</CardTitle>
+        </CardHeader>
+      </Card>
+
+      <div className="w-full rounded-3xl p-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">
+              Crop Recommendation System
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div className="space-y-2">
+                <Label htmlFor="crop_year">
+                  Crop Year
+                </Label>
+                <Input
+                  id="crop_year"
+                  name="crop_year"
+                  type="number"
+                  value={formData.crop_year}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="season">
+                  Season
+                </Label>
+
+                <Select
+                  value={formData.season}
+                  onValueChange={(value: string) =>
+                    setFormData((previous) => ({
+                      ...previous,
+                      season: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Season" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="Kharif">
+                      Kharif
+                    </SelectItem>
+
+                    <SelectItem value="Rabi">
+                      Rabi
+                    </SelectItem>
+
+                    <SelectItem value="Whole Year">
+                      Whole Year
+                    </SelectItem>
+
+                    <SelectItem value="Summer">
+                      Summer
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="state">
+                  State
+                </Label>
+
+                <Input
+                  id="state"
+                  name="state"
+                  placeholder="Assam"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="area">
+                  Area
+                </Label>
+
+                <Input
+                  id="area"
+                  name="area"
+                  type="number"
+                  value={formData.area}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="annual_rainfall">
+                  Annual Rainfall
+                </Label>
+
+                <Input
+                  id="annual_rainfall"
+                  name="annual_rainfall"
+                  type="number"
+                  value={formData.annual_rainfall}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fertilizer">
+                  Fertilizer
+                </Label>
+
+                <Input
+                  id="fertilizer"
+                  name="fertilizer"
+                  type="number"
+                  value={formData.fertilizer}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pesticide">
+                  Pesticide
+                </Label>
+
+                <Input
+                  id="pesticide"
+                  name="pesticide"
+                  type="number"
+                  value={formData.pesticide}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+            </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="mt-5 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+              >
+                {error}
+              </div>
+            )}
+
+            <div className="flex mt-6">
+              <Button
+                onClick={predict}
+                disabled={loading}
+                className="flex-1 mx-auto max-w-[60vw]"
+              >
+                {loading
+                  ? "Getting Recommendation..."
+                  : "Get Prediction"}
+              </Button>
+            </div>
+
+            {result && (
+              <Card className="mt-6 bg-blue-50">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    Recommendation Result
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent>
+                  <CropRecommendations
+                    data={result}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }
-
 export default Dashboard;
-

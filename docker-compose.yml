@@ -1,21 +1,19 @@
-version: "3.8"
-
 services:
   client:
-    build: /client
+    build: ./client
     ports:
       - "5173:5173"
     env_file:
-      - /client/.env
+      - ./client/.env
     depends_on:
       - backend
 
   backend:
-    build: /backend
+    build: ./backend
     ports:
       - "8000:8000"
     env_file:
-      - /backend/.env
+      - ./backend/.env
     depends_on:
       - db
 

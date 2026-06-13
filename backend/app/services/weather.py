@@ -7,8 +7,6 @@ load_dotenv()  # make sure env is loaded when this file imports
 API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 def get_weather_by_coords(lat: float, lon: float):
-    print("DEBUG Weather API KEY =", API_KEY)
-
     if not API_KEY:
         print("OPENWEATHER_API_KEY missing in weather.py")
         return None
@@ -19,9 +17,9 @@ def get_weather_by_coords(lat: float, lon: float):
     )
 
     try:
-        response = requests.get(url)
-        data = response.json()
-        return data
-    except Exception as e:
+        response = requests.get(url, timeout=3)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
         print("Weather fetch error:", e)
         return None

@@ -5,9 +5,6 @@ from app.routes.health import router as health_router
 from dotenv import load_dotenv
 load_dotenv()
 
-import os
-print("DEBUG: Loaded API KEY =", os.getenv("OPENWEATHER_API_KEY"))
-
 app = FastAPI(title="SmartCrop Advisor - Backend")
 
 app.add_middleware(
