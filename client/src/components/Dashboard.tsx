@@ -69,79 +69,87 @@ function Dashboard() {
   };
 
   const predict = async () => {
-    const validationError = validateForm();
+  console.log("PREDICT CLICKED");
 
-    if (validationError) {
-      setError(validationError);
-      return;
+  const validationError = validateForm();
+
+  if (validationError) {
+    console.log("VALIDATION ERROR:", validationError);
+    setError(validationError);
+    return;
+  }
+
+  setLoading(true);
+  setError(null);
+  setResult(null);
+
+  // const controller = new AbortController();
+  // const timeout = window.setTimeout(
+  //   () => controller.abort(),
+  //   15000
+  // );
+
+  try {
+    const token = await getToken();
+
+    const payload = {
+      crop_year: Number(formData.crop_year),
+      season: formData.season,
+      state: formData.state,
+      area: Number(formData.area),
+      annual_rainfall: Number(formData.annual_rainfall),
+      fertilizer: Number(formData.fertilizer),
+      pesticide: Number(formData.pesticide),
+    };
+
+    console.log("API URL:", API_BASE_URL);
+    console.log("REQUEST BODY:", payload);
+
+   const response = await fetch(
+  `${API_BASE_URL}/api/recommend`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token
+        ? { Authorization: `Bearer ${token}` }
+        : {}),
+    },
+    body: JSON.stringify(payload),
+  }
+);
+
+    console.log("RESPONSE STATUS:", response.status);
+
+    const data = await response.json();
+
+    console.log("RESPONSE DATA:", data);
+
+    if (!response.ok) {
+      throw new Error(
+        data.detail ||
+        "The prediction service returned an error."
+      );
     }
 
-    setLoading(true);
-    setError(null);
-    setResult(null);
+    setResult(data as RecommendResponse);
 
-    const controller = new AbortController();
-    const timeout = window.setTimeout(
-      () => controller.abort(),
-      15000
+  } catch (requestError) {
+    console.error("REQUEST ERROR:", requestError);
+
+    setError(
+      requestError instanceof DOMException &&
+      requestError.name === "AbortError"
+        ? "Prediction timed out. Please try again."
+        : requestError instanceof Error
+        ? requestError.message
+        : "Failed to get a recommendation."
     );
-
-    try {
-      const token = await getToken();
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/recommend`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token
-              ? { Authorization: `Bearer ${token}` }
-              : {}),
-          },
-          body: JSON.stringify({
-            crop_year: Number(formData.crop_year),
-            season: formData.season,
-            state: formData.state,
-            area: Number(formData.area),
-            annual_rainfall: Number(
-              formData.annual_rainfall
-            ),
-            fertilizer: Number(
-              formData.fertilizer
-            ),
-            pesticide: Number(
-              formData.pesticide
-            ),
-          }),
-          signal: controller.signal,
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail ||
-            "The prediction service returned an error."
-        );
-      }
-
-      setResult(data as RecommendResponse);
-    } catch (requestError) {
-      setError(
-        requestError instanceof DOMException &&
-          requestError.name === "AbortError"
-          ? "Prediction timed out. Please try again."
-          : requestError instanceof Error
-          ? requestError.message
-          : "Failed to get a recommendation."
-      );
-    } finally {
-      window.clearTimeout(timeout);
-      setLoading(false);
-    }
-  };
+  } finally {
+    // window.clearTimeout(timeout);
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex gap-4 mt-10 pb-10">
@@ -166,13 +174,40 @@ function Dashboard() {
                 <Label htmlFor="crop_year">
                   Crop Year
                 </Label>
-                <Input
+                {/* <Input
                   id="crop_year"
                   name="crop_year"
                   type="number"
                   value={formData.crop_year}
                   onChange={handleInputChange}
-                />
+                /> */}
+                <Select
+  value={formData.crop_year}
+  onValueChange={(value) =>
+    setFormData((prev) => ({
+      ...prev,
+      crop_year: value,
+    }))
+  }
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select Year" />
+  </SelectTrigger>
+
+  <SelectContent>
+    {Array.from(
+      { length: 24 },
+      (_, i) => 1997 + i
+    ).map((year) => (
+      <SelectItem
+        key={year}
+        value={year.toString()}
+      >
+        {year}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
               </div>
 
               <div className="space-y-2">
@@ -218,13 +253,36 @@ function Dashboard() {
                   State
                 </Label>
 
-                <Input
+                {/* <Input
                   id="state"
                   name="state"
                   placeholder="Assam"
                   value={formData.state}
                   onChange={handleInputChange}
-                />
+                /> */}
+                <Select
+  value={formData.state}
+  onValueChange={(value) =>
+    setFormData((prev) => ({
+      ...prev,
+      state: value,
+    }))
+  }
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select State" />
+  </SelectTrigger>
+
+  <SelectContent>
+    <SelectItem value="Assam">Assam</SelectItem>
+    <SelectItem value="Karnataka">Karnataka</SelectItem>
+    <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+    <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+    <SelectItem value="Kerala">Kerala</SelectItem>
+    <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
+    <SelectItem value="Telangana">Telangana</SelectItem>
+  </SelectContent>
+</Select>
               </div>
 
               <div className="space-y-2">
@@ -327,4 +385,5 @@ function Dashboard() {
     </div>
   );
 }
+
 export default Dashboard;

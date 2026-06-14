@@ -6,7 +6,6 @@
 
 # router = APIRouter()
 
-
 # @router.post("/recommend", response_model=RecommendResponse)
 # async def recommend(input: CropInput = Body(...)):
 #     """
@@ -131,7 +130,7 @@ async def recommend(
 
         for crop in predictor.get_all_crops():
 
-            predicted_yield = predictor.predict_crop_yield(
+            metrics = predictor.predict_crop_yield(
                 crop=crop,
                 crop_year=input.crop_year,
                 season=input.season,
@@ -142,10 +141,18 @@ async def recommend(
                 pesticide=input.pesticide,
             )
 
+            predicted_yield = metrics["yield"]
+            confidence = metrics["confidence"]
+            min_yield = metrics["min_yield"]
+            max_yield = metrics["max_yield"]
+
             results.append(
                 {
                     "crop": crop,
                     "yield": predicted_yield,
+                    "confidence": confidence,
+                    "min_yield": min_yield,
+                    "max_yield": max_yield,
                 }
             )
 
@@ -162,14 +169,14 @@ async def recommend(
 
             recommendations.append(
                 CropRecommendation(
-                    crop=item["crop"],
-                    estimated_yield=item["yield"],
-                    estimated_profit=round(
-                        item["yield"] * 10,
-                        2,
-                    ),
-                    rank=rank,
-                )
+    crop=item["crop"],
+    estimated_yield=item["yield"],
+    estimated_profit=round(item["yield"] * 10, 2),
+    rank=rank,
+    confidence=item["confidence"],
+    min_yield=item["min_yield"],
+    max_yield=item["max_yield"],
+)
             )
 
         return RecommendResponse(

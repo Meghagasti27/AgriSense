@@ -70,6 +70,10 @@ export interface CropRecommendation {
   estimated_yield: number;
   estimated_profit: number;
   rank: number;
+
+  confidence: number;
+  min_yield: number;
+  max_yield: number;
 }
 
 export interface RecommendResponse {

@@ -4,7 +4,9 @@ interface CropRecommendationsProps {
   data: RecommendResponse;
 }
 
-const CropRecommendations = ({ data }: CropRecommendationsProps) => {
+const CropRecommendations = ({
+  data,
+}: CropRecommendationsProps) => {
   return (
     <div className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {data.recommendations.map((item) => (
@@ -25,6 +27,21 @@ const CropRecommendations = ({ data }: CropRecommendationsProps) => {
             <p>
               <strong>Estimated Profit:</strong>{" "}
               ₹{item.estimated_profit}
+            </p>
+
+            <p>
+              <strong>Confidence:</strong>{" "}
+              {item.confidence}%
+            </p>
+
+            <p>
+              <strong>Min Yield:</strong>{" "}
+              {item.min_yield}
+            </p>
+
+            <p>
+              <strong>Max Yield:</strong>{" "}
+              {item.max_yield}
             </p>
 
             <p>
